@@ -10,17 +10,14 @@ fn main() {
     // skip the first argument, which is the command name
     let mut args = env::args().skip(1);
     let day: usize;
-    match args.next() {
-        Some(i) => {
-            day = i.parse().unwrap_or_else(|err| {
-                eprintln!("{err}");
-                process::exit(ARGUMENT_ERROR);
-            });
-        }
-        None => {
-            println!("must specify the day as a number");
+    if let Some(i) = args.next() {
+        day = i.parse().unwrap_or_else(|err| {
+            eprintln!("{err}");
             process::exit(ARGUMENT_ERROR);
-        }
+        });
+    } else {
+        println!("must specify the day as a number");
+        process::exit(ARGUMENT_ERROR);
     }
 
     let days = [day01::run];
