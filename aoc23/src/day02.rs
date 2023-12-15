@@ -65,8 +65,6 @@ fn part1_check_game(input: &str, max: &HashMap<&str, u32>) -> bool {
     true
 }
 
-// TODO: disable dead code check
-#[allow(dead_code)]
 fn part2_check_game(input: &str) -> u32 {
     let mut min = HashMap::from([("red", 0), ("green", 0), ("blue", 0)]);
     let pairs = input.split(|c| matches!(c, ';' | ','));
