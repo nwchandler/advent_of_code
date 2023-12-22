@@ -13,9 +13,8 @@ fn part1(input: &str) -> Result<String, &'static str> {
         row = row.split(":").nth(1).unwrap();
         let mut row_sections = row.split("|");
 
-        // extract and sort winning numbers
-        let mut winning_numbers = extract_numbers(row_sections.next().unwrap());
-        winning_numbers.sort();
+        // extract winning numbers
+        let winning_numbers = extract_numbers(row_sections.next().unwrap());
 
         // extract and sort actual numbers
         let mut actual_numbers = extract_numbers(row_sections.next().unwrap());
@@ -23,8 +22,8 @@ fn part1(input: &str) -> Result<String, &'static str> {
 
         let mut match_count: u32 = 0;
 
-        for num in actual_numbers {
-            if let Ok(_) = winning_numbers.binary_search(&num) {
+        for num in winning_numbers {
+            if let Ok(_) = actual_numbers.binary_search(&num) {
                 match_count += 1;
             }
         }
