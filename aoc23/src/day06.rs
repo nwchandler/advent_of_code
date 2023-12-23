@@ -74,7 +74,54 @@ fn part1(input: &str) -> Result<String, &'static str> {
 }
 
 fn part2(input: &str) -> Result<String, &'static str> {
-    let result: u32 = 0;
+    let mut result: u32 = 0;
+
+    let mut race_time_string = String::from("");
+    input
+        .lines()
+        .nth(0)
+        .unwrap()
+        .split(':')
+        .nth(1)
+        .unwrap()
+        .trim()
+        .split_whitespace()
+        .for_each(|time| race_time_string.push_str(time));
+    let race_time: u64 = race_time_string.parse().unwrap();
+
+    let mut race_distance_string = String::from("");
+    input
+        .lines()
+        .nth(1)
+        .unwrap()
+        .split(':')
+        .nth(1)
+        .unwrap()
+        .trim()
+        .split_whitespace()
+        .for_each(|time| race_distance_string.push_str(time));
+    let race_distance: u64 = race_distance_string.parse().unwrap();
+
+    let mut this_hold_time = race_time / 2;
+    let mut this_race_time = if race_time % 2 == 0 {
+        race_time / 2
+    } else {
+        (race_time / 2) + 1
+    };
+
+    while this_hold_time * this_race_time > race_distance {
+        // When hold time is equal to the remaining race time, there is only one combination
+        // that will work; however, when they are different, you could consider the two
+        // interchangeable (hold time = 1, race time = 2 is the same as hold time = 2, race
+        // time = 1), so we can add 2.
+        result += if this_hold_time != this_race_time {
+            2
+        } else {
+            1
+        };
+        this_hold_time -= 1;
+        this_race_time += 1;
+    }
 
     Ok(result.to_string())
 }
@@ -90,12 +137,11 @@ Distance:  9  40  200";
         assert_eq!(result.unwrap(), "288");
     }
 
-    // TODO: Don't ignore after implementing
-    #[ignore]
     #[test]
     fn integration_test_part2() {
-        let input = "";
+        let input = "Time:      7  15   30
+Distance:  9  40  200";
         let result = part2(input);
-        assert_eq!(result.unwrap(), "??");
+        assert_eq!(result.unwrap(), "71503");
     }
 }
