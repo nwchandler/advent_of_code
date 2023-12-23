@@ -20,7 +20,14 @@ fn main() {
         process::exit(ARGUMENT_ERROR);
     }
 
-    let days = [day01::run, day02::run, day03::run, day04::run, day05::run];
+    let days = [
+        day01::run,
+        day02::run,
+        day03::run,
+        day04::run,
+        day05::run,
+        day06::run,
+    ];
 
     if day > days.len() {
         eprintln!("day {day} is not implemented");
