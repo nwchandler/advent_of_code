@@ -15,7 +15,7 @@ fn part1(input: &str) -> Result<String, &'static str> {
     seed_input = seed_input.split(':').nth(1).unwrap();
     seed_input.split_whitespace().for_each(|seed| {
         seeds.push(seed.parse::<u64>().unwrap_or_else(|err| {
-            panic!("unable to parse {} from input {}", seed, input);
+            panic!("unable to parse {} from input {}, err {}", seed, input, err);
         }));
     });
 
@@ -86,7 +86,7 @@ impl Map {
         let mut numbers: Vec<i64> = vec![];
         input.split_whitespace().for_each(|num| {
             numbers.push(num.parse::<i64>().unwrap_or_else(|err| {
-                panic!("unable to parse {} from input {}", num, input);
+                panic!("unable to parse {} from input {}, err {}", num, input, err);
             }));
         });
 
