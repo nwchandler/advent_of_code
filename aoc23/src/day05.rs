@@ -41,6 +41,69 @@ fn part1(input: &str) -> Result<String, &'static str> {
     Ok(result.to_string())
 }
 
+fn part2(input: &str) -> Result<String, &'static str> {
+    let mut input_lines = input.split("\n\n");
+
+    // set up a vector of seeds
+    let mut seed_starts: Vec<u64> = vec![];
+    let mut seed_ranges: Vec<u64> = vec![];
+    let mut seed_input = input_lines.next().unwrap();
+    seed_input = seed_input.split(':').nth(1).unwrap();
+    seed_input
+        .split_whitespace()
+        .enumerate()
+        .for_each(|(i, val)| {
+            if i % 2 == 0 {
+                seed_starts.push(val.parse::<u64>().unwrap_or_else(|err| {
+                    panic!("unable to parse {} from input {}, err {}", val, input, err);
+                }));
+            } else {
+                seed_ranges.push(val.parse::<u64>().unwrap_or_else(|err| {
+                    panic!("unable to parse {} from input {}, err {}", val, input, err);
+                }));
+            }
+        });
+
+    // set up a pipeline of maps
+    let mut map_pipeline: Vec<Map> = vec![];
+    for map_definition in input_lines.into_iter() {
+        let mut map = Map::new();
+
+        for map_entry in map_definition.split('\n').skip(1) {
+            let mut numbers: Vec<i64> = vec![];
+            map_entry.split_whitespace().for_each(|num| {
+                numbers.push(num.parse::<i64>().unwrap_or_else(|err| {
+                    panic!("unable to parse {} from input {}, err {}", num, input, err);
+                }));
+            });
+
+            map.entries.push(MapEntry {
+                destination: numbers[1],
+                source: numbers[0],
+                range: numbers[2],
+            });
+        }
+        map_pipeline.push(map);
+    }
+    map_pipeline.reverse();
+
+    let mut i: u64 = 0;
+    loop {
+        let mut next: u64 = i as u64;
+        for map in &map_pipeline {
+            next = map.map(next as i64);
+        }
+
+        for j in 0..seed_starts.len() {
+            let range = seed_starts[j]..(seed_starts[j] + seed_ranges[j]);
+            if range.contains(&(next as u64)) {
+                return Ok(i.to_string());
+            }
+        }
+        i += 1;
+    }
+}
+
 /// MapEntry corresponds to each map line
 #[derive(Debug)]
 struct MapEntry {
@@ -96,12 +159,6 @@ impl Map {
             range: numbers[2],
         })
     }
-}
-
-fn part2(input: &str) -> Result<String, &'static str> {
-    let result: u64 = 0;
-
-    Ok(result.to_string())
 }
 
 #[cfg(test)]
@@ -185,12 +242,42 @@ humidity-to-location map:
         assert_eq!(result.unwrap(), "35");
     }
 
-    // TODO: uncomment when implemented
-    // #[ignore]
-    // #[test]
-    // fn integration_test_part2() {
-    //     let input = "";
-    //     let result = part2(input);
-    //     assert_eq!(result.unwrap(), "??");
-    // }
+    #[test]
+    fn integration_test_part2() {
+        let input = "seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4";
+        let result = part2(input);
+        assert_eq!(result.unwrap(), "46");
+    }
 }
