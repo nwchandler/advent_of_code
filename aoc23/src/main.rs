@@ -27,6 +27,7 @@ fn main() {
         day04::run,
         day05::run,
         day06::run,
+        day07::run,
     ];
 
     if day > days.len() {
