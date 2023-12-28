@@ -19,8 +19,17 @@ fn part1(input: &str) -> Result<String, &'static str> {
     Ok(result.to_string())
 }
 
-fn part2(_input: &str) -> Result<String, &'static str> {
-    let result: u32 = 0;
+fn part2(input: &str) -> Result<String, &'static str> {
+    let mut result: i32 = 0;
+
+    for sequence in input.lines() {
+        let mut this_seq: Vec<i32> = vec![];
+        for number in sequence.split_whitespace() {
+            this_seq.push(number.to_string().parse::<i32>().unwrap());
+        }
+        this_seq.reverse();
+        result += derive_next_from_seq(&this_seq);
+    }
 
     Ok(result.to_string())
 }
@@ -81,12 +90,12 @@ mod tests {
         assert_eq!(result.unwrap(), "114");
     }
 
-    // TODO: Don't ignore once implemented
-    #[ignore]
     #[test]
     fn integration_test_part2() {
-        let input = "";
+        let input = "0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45";
         let result = part2(input);
-        assert_eq!(result.unwrap(), "??");
+        assert_eq!(result.unwrap(), "2");
     }
 }
