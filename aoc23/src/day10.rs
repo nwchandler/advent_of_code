@@ -6,61 +6,112 @@ pub fn run(input: &str) -> Result<crate::Solution, &'static str> {
 }
 
 fn part1(input: &str) -> Result<String, &'static str> {
-    let result: u32 = 0;
+    let result;
 
-    let mut map: Vec<Vec<u8>> = vec![];
+    let mut map: Vec<(usize, usize)> = vec![];
+    let mut row_length: usize = 0;
 
-    let mut s: (usize, usize) = (0, 0);
+    let mut s: usize = 0;
     for (i, line) in input.lines().enumerate() {
-        let mut this_row: Vec<u8> = vec![];
+        // we'll use the row length for offsets later
+        if row_length == 0 {
+            row_length = line.chars().count();
+        }
         for (j, c) in line.chars().enumerate() {
-            this_row.push(match c {
-                '|' => Direction::NORTH | Direction::SOUTH,
-                '-' => Direction::EAST | Direction::WEST,
-                'L' => Direction::NORTH | Direction::EAST,
-                'J' => Direction::NORTH | Direction::WEST,
-                '7' => Direction::SOUTH | Direction::WEST,
-                'F' => Direction::SOUTH | Direction::EAST,
-                '.' => 0,
+            // this is the position of the character in the array
+            let this = j + (i * row_length);
+
+            // since we're using unsigned numbers here, we need to avoid underruns
+            let pipe_north = if this > row_length {
+                this - row_length
+            } else {
+                this
+            };
+            let pipe_west = if this % row_length > 0 {
+                this - 1
+            } else {
+                this
+            };
+
+            // we're taking a short cut and ignoring going past the right or bottom of the map
+            let pipe_south = this + row_length;
+            let pipe_east = this + 1;
+
+            map.push(match c {
+                '|' => (pipe_north, pipe_south),
+                '-' => (pipe_west, pipe_east),
+                'L' => (pipe_north, pipe_east),
+                'J' => (pipe_north, pipe_west),
+                '7' => (pipe_south, pipe_west),
+                'F' => (pipe_south, pipe_east),
+                // . doesn't go anyplace...
+                '.' => (this, this),
+                // this is going to get changed later on
                 'S' => {
-                    s = (i, j);
-                    0
+                    s = this;
+                    (this, this)
                 }
                 _ => panic!("unexpected character: {c}"),
             });
         }
-        map.push(this_row);
     }
 
     {
-        // taking a shortcut here and assuming S is not on an edge row or column
-        let elem_above_s = map[s.0 - 1][s.1];
-        let elem_below_s = map[s.0 + 1][s.1];
-        let elem_left_of_s = map[s.0][s.1 - 1];
-        let elem_right_of_s = map[s.0][s.1 + 1];
+        let elem_above_s = s - row_length;
+        let elem_below_s = s + row_length;
+        let elem_left_s = s - 1;
+        let elem_right_s = s + 1;
 
-        if (elem_above_s & Direction::SOUTH) != 0 {
-            map[s.0][s.1] |= Direction::NORTH;
+        let mut first: usize = 0;
+        let mut second: usize = 0;
+        if s == map[elem_above_s].0 || s == map[elem_above_s].1 {
+            match first {
+                0 => first = elem_above_s,
+                _ => second = elem_above_s,
+            }
         }
-        if (elem_below_s & Direction::NORTH) != 0 {
-            map[s.0][s.1] |= Direction::SOUTH;
+        if s == map[elem_below_s].0 || s == map[elem_below_s].1 {
+            match first {
+                0 => first = elem_below_s,
+                _ => second = elem_below_s,
+            }
         }
-        if (elem_left_of_s & Direction::EAST) != 0 {
-            map[s.0][s.1] |= Direction::WEST;
+        if s == map[elem_left_s].0 || s == map[elem_left_s].1 {
+            match first {
+                0 => first = elem_left_s,
+                _ => second = elem_left_s,
+            }
         }
-        if (elem_right_of_s & Direction::WEST) != 0 {
-            map[s.0][s.1] |= Direction::EAST;
+        if s == map[elem_right_s].0 || s == map[elem_right_s].1 {
+            match first {
+                0 => first = elem_right_s,
+                _ => second = elem_right_s,
+            }
+        }
+        map[s].0 = first;
+        map[s].1 = second;
+    }
+
+    let mut pipe_length = 1;
+    let mut last_visited = s;
+    let mut next = map[s].0;
+    loop {
+        let this = next;
+        if last_visited == map[this].0 {
+            next = map[this].1;
+        } else {
+            next = map[this].0;
+        };
+        last_visited = this;
+        pipe_length += 1;
+        // once we get back to s, we have completed the loop
+        if next == s {
+            break;
         }
     }
 
-    let mut pipe_length = 0;
-
-    // initialize pipe length to 0
-    // set last visited
-    // while the next node is not S {
-    //      add 1 to pipe length
-    //      set next node to
-    // }
+    // the farthest point of the loop will be 1/2 the total distance away
+    result = pipe_length / 2;
 
     Ok(result.to_string())
 }
@@ -71,44 +122,10 @@ fn part2(_input: &str) -> Result<String, &'static str> {
     Ok(result.to_string())
 }
 
-enum Direction {}
-
-impl Direction {
-    const NORTH: u8 = 1;
-    const SOUTH: u8 = 2;
-    const EAST: u8 = 4;
-    const WEST: u8 = 8;
-}
-
-// #[derive(Copy, Clone, Debug)]
-// #[repr(u8)]
-// enum Pipe {
-//     // |
-//     Vertical = Direction::NORTH | Direction::SOUTH,
-//     // -
-//     Horizontal = Direction::WEST | Direction::EAST,
-//     // L
-//     L = Direction::NORTH | Direction::EAST,
-//     // J
-//     J = Direction::NORTH | Direction::WEST,
-//     // 7
-//     Seven = Direction::SOUTH | Direction::WEST,
-//     // F
-//     F = Direction::SOUTH | Direction::EAST,
-// }
-//
-// impl Pipe {
-//     fn match_direction(&self, direction: u8) -> bool {
-//         (*self as u8 & direction) != 0
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // TODO: Don't ignore once implemented
-    #[ignore]
     #[test]
     fn integration_test_part1() {
         {
