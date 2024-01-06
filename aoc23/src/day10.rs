@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 pub fn run(input: &str) -> Result<crate::Solution, &'static str> {
     Ok(crate::Solution {
         part1: part1(input)?,
@@ -119,194 +121,167 @@ fn part1(input: &str) -> Result<String, &'static str> {
 fn part2(input: &str) -> Result<String, &'static str> {
     let mut result = 0;
 
-    let mut map: Vec<(usize, usize)> = vec![];
-    let mut row_length: usize = 0;
+    let lines = input.lines();
+    let row_count: usize = lines.clone().count();
+    let row_length: usize = lines.clone().next().unwrap().chars().count();
+    let mut source_map: Vec<Vec<u8>> = vec![vec![0; row_length * 3]; row_count * 3];
 
-    let mut s: usize = 0;
-    for (i, line) in input.lines().enumerate() {
-        // we'll use the row length for offsets later
-        if row_length == 0 {
-            row_length = line.chars().count();
-        }
+    let mut s: (usize, usize) = (0, 0);
+    for (i, line) in lines.enumerate() {
+        let this_row = i * 3 + 1;
         for (j, c) in line.chars().enumerate() {
-            // this is the position of the character in the array
-            let this = j + (i * row_length);
-
-            // since we're using unsigned numbers here, we need to avoid underruns
-            let pipe_north = if this > row_length {
-                this - row_length
-            } else {
-                this
-            };
-            let pipe_west = if this % row_length > 0 {
-                this - 1
-            } else {
-                this
-            };
-
-            // we're taking a short cut and ignoring going past the right or bottom of the map
-            let pipe_south = this + row_length;
-            let pipe_east = this + 1;
-
-            map.push(match c {
-                '|' => (pipe_north, pipe_south),
-                '-' => (pipe_west, pipe_east),
-                'L' => (pipe_north, pipe_east),
-                'J' => (pipe_north, pipe_west),
-                '7' => (pipe_south, pipe_west),
-                'F' => (pipe_south, pipe_east),
-                // . doesn't go anyplace...
-                '.' => (this, this),
-                // this is going to get changed later on
+            let this_col = j * 3 + 1;
+            source_map[this_row][this_col] = 1;
+            match c {
+                '|' => {
+                    source_map[this_row - 1][this_col] = 1;
+                    source_map[this_row + 1][this_col] = 1;
+                }
+                '-' => {
+                    source_map[this_row][this_col - 1] = 1;
+                    source_map[this_row][this_col + 1] = 1;
+                }
+                'L' => {
+                    source_map[this_row - 1][this_col] = 1;
+                    source_map[this_row][this_col + 1] = 1;
+                }
+                'J' => {
+                    source_map[this_row - 1][this_col] = 1;
+                    source_map[this_row][this_col - 1] = 1;
+                }
+                '7' => {
+                    source_map[this_row][this_col - 1] = 1;
+                    source_map[this_row + 1][this_col] = 1;
+                }
+                'F' => {
+                    source_map[this_row][this_col + 1] = 1;
+                    source_map[this_row + 1][this_col] = 1;
+                }
+                '.' => {
+                    source_map[this_row][this_col] = 0;
+                }
                 'S' => {
-                    s = this;
-                    (this, this)
+                    s = (this_row, this_col);
                 }
                 _ => panic!("unexpected character: {c}"),
-            });
+            }
         }
     }
 
-    {
-        let elem_above_s = s - row_length;
-        let elem_below_s = s + row_length;
-        let elem_left_s = s - 1;
-        let elem_right_s = s + 1;
-
-        let mut first: usize = 0;
-        let mut second: usize = 0;
-        if s == map[elem_above_s].0 || s == map[elem_above_s].1 {
-            match first {
-                0 => first = elem_above_s,
-                _ => second = elem_above_s,
-            }
-        }
-        if s == map[elem_below_s].0 || s == map[elem_below_s].1 {
-            match first {
-                0 => first = elem_below_s,
-                _ => second = elem_below_s,
-            }
-        }
-        if s == map[elem_left_s].0 || s == map[elem_left_s].1 {
-            match first {
-                0 => first = elem_left_s,
-                _ => second = elem_left_s,
-            }
-        }
-        if s == map[elem_right_s].0 || s == map[elem_right_s].1 {
-            match first {
-                0 => first = elem_right_s,
-                _ => second = elem_right_s,
-            }
-        }
-        map[s].0 = first;
-        map[s].1 = second;
+    // fill in for s
+    if s.1 > 2 && source_map[s.0][(s.1) - 2] == 1 {
+        source_map[s.0][(s.1) - 1] = 1;
     }
+    if source_map[s.0][(s.1) + 2] == 1 {
+        source_map[s.0][(s.1) + 1] = 1;
+    }
+    if s.0 > 2 && source_map[(s.0) - 2][s.1] == 1 {
+        source_map[(s.0) - 1][s.1] = 1;
+    }
+    if source_map[(s.0) + 2][s.1] == 1 {
+        source_map[(s.0) + 1][s.1] = 1;
+    }
+
+    let mut calculation_matrix: Vec<Vec<u8>> = vec![vec![0; row_length * 3]; row_count * 3];
 
     let mut last_visited = s;
-    let mut next = map[s].0;
-    let mut pipe_path: Vec<u8> = vec![0; map.len()];
-    pipe_path[s] = 1;
+    let mut next = s;
     loop {
-        let this = next;
-        if last_visited == map[this].0 {
-            next = map[this].1;
-        } else {
-            next = map[this].0;
-        };
-        last_visited = this;
-        pipe_path[this] = 1;
+        let this_row = next.0;
+        let this_col = next.1;
+        calculation_matrix[this_row][this_col] = 1;
+
+        let neighbor_left = (this_row, this_col - 1);
+        let neighbor_right = (this_row, this_col + 1);
+        let neighbor_up = (this_row - 1, this_col);
+        let neighbor_down = (this_row + 1, this_col);
+
+        if last_visited != neighbor_left && source_map[neighbor_left.0][neighbor_left.1] == 1 {
+            next = neighbor_left;
+        }
+        if last_visited != neighbor_right && source_map[neighbor_right.0][neighbor_right.1] == 1 {
+            next = neighbor_right;
+        }
+        if last_visited != neighbor_up && source_map[neighbor_up.0][neighbor_up.1] == 1 {
+            next = neighbor_up;
+        }
+        if last_visited != neighbor_down && source_map[neighbor_down.0][neighbor_down.1] == 1 {
+            next = neighbor_down;
+        }
+
+        last_visited = (this_row, this_col);
         // once we get back to s, we have completed the loop
         if next == s {
             break;
         }
     }
 
-    // TODO: remove before committing
-    for i in 0..pipe_path.len() {
-        if i % row_length == 0 {
-            println!();
-        }
-        print!("{} ", pipe_path[i]);
-    }
-    println!();
-    println!();
+    let mut flood_queue: VecDeque<(usize, usize)> = VecDeque::from([(0, 0)]);
+    while flood_queue.len() != 0 {
+        let next = flood_queue.pop_back().unwrap();
+        let this_row = next.0;
+        let this_col = next.1;
+        calculation_matrix[this_row][this_col] = 2;
 
-    let mut horizontal_enclosed_tiles: Vec<u8> = vec![0; map.len()];
-    let mut may_be_enclosed = false;
-    for i in 0..pipe_path.len() {
-        // if this is a new row, the first element cannot be enclosed; make sure may_be_enclosed is
-        // false and then move along
-        if i % row_length == 0 {
-            may_be_enclosed = false;
-            horizontal_enclosed_tiles[i] = 0;
-            continue;
-        }
-        if pipe_path[i] == 1 {
-            // if this section has pipe in it, then we change how we process the next tile; if
-            // there is an odd number of tiles with pipe, it is possible that subsequent tiles
-            // could be enclosed, but if there is an even number, they cannot be enclosed.
-            // Flip-flooping this variable allows us to track whether even or odd numbers have been
-            // seen.
-            may_be_enclosed = !may_be_enclosed;
+        let neighbor_left = if this_col > 0 {
+            (this_row, this_col - 1)
         } else {
-            // if this tile does not have part of the pipe, then it could feasibly be enclosed.
-            if may_be_enclosed {
-                horizontal_enclosed_tiles[i] = 1;
-            }
+            (this_row, this_col)
         };
-    }
-
-    // TODO: remove before committing
-    for i in 0..horizontal_enclosed_tiles.len() {
-        if i % row_length == 0 {
-            println!();
+        if calculation_matrix[neighbor_left.0][neighbor_left.1] == 0 {
+            flood_queue.push_back(neighbor_left)
         }
-        print!("{} ", horizontal_enclosed_tiles[i]);
-    }
-    println!();
-    println!();
 
-    may_be_enclosed = false;
-    // now, get rid of any extra 1's on the right side of the map
-    for i in 0..pipe_path.len() {
-        let this_index = pipe_path.len() - i - 1;
-        // if this is a new row, the first element cannot be enclosed; make sure may_be_enclosed is
-        // false and then move along
-        if i % row_length == 0 {
-            may_be_enclosed = false;
-            horizontal_enclosed_tiles[this_index] = 0;
-            continue;
-        }
-        if pipe_path[this_index] == 1 {
-            // if this section has pipe in it, then we change how we process the next tile; if
-            // there is an odd number of tiles with pipe, it is possible that subsequent tiles
-            // could be enclosed, but if there is an even number, they cannot be enclosed.
-            // Flip-flooping this variable allows us to track whether even or odd numbers have been
-            // seen.
-            may_be_enclosed = !may_be_enclosed;
-            horizontal_enclosed_tiles[this_index] = 0;
+        let neighbor_right = if this_col < calculation_matrix[0].len() - 1 {
+            (this_row, this_col + 1)
         } else {
-            // if this tile does not have part of the pipe, then it could feasibly be enclosed.
-            if may_be_enclosed {
-                horizontal_enclosed_tiles[this_index] = 1 & horizontal_enclosed_tiles[this_index];
+            (this_row, this_col)
+        };
+        if calculation_matrix[neighbor_right.0][neighbor_right.1] == 0 {
+            flood_queue.push_back(neighbor_right)
+        }
+
+        let neighbor_up = if this_row > 0 {
+            (this_row - 1, this_col)
+        } else {
+            (this_row, this_col)
+        };
+        if calculation_matrix[neighbor_up.0][neighbor_up.1] == 0 {
+            flood_queue.push_back(neighbor_up)
+        }
+
+        let neighbor_down = if this_row < calculation_matrix.len() - 1 {
+            (this_row + 1, this_col)
+        } else {
+            (this_row, this_col)
+        };
+        if calculation_matrix[neighbor_down.0][neighbor_down.1] == 0 {
+            flood_queue.push_back(neighbor_down)
+        }
+    }
+
+    // NOTE: I took the calculation approach because I like to see the graph. :)
+    for (i, row) in calculation_matrix.into_iter().enumerate() {
+        for (j, col) in row.into_iter().enumerate() {
+            if col == 0 {
+                // Each "real" node is centered in a 3x3 grid, so to calculate the interior nodes,
+                // we need to only look at these center nodes. There will still be individual cells
+                // in the calculation matrix whose values are 0, but if they aren't centered, we
+                // should not count them.
+                if j % 3 == 1 && i % 3 == 1 {
+                    result += 1;
+                    print!("\x1b[47m \x1b[0m");
+                } else {
+                    print!(" ");
+                }
+            } else if col == 2 {
+                print!("\x1b[38;5;159m·\x1b[0m");
             } else {
-                horizontal_enclosed_tiles[this_index] = 0;
+                print!("\x1b[48;5;240m \x1b[0m");
             }
-        };
-    }
-
-    // TODO: remove before committing
-    for i in 0..horizontal_enclosed_tiles.len() {
-        if i % row_length == 0 {
-            println!();
         }
-        print!("{} ", horizontal_enclosed_tiles[i]);
+        println!();
     }
-    println!();
-    println!();
-
-    result = horizontal_enclosed_tiles.into_iter().sum();
 
     Ok(result.to_string())
 }
@@ -337,8 +312,6 @@ LJ.LJ";
         }
     }
 
-    // TODO: Don't ignore once implemented
-    // #[ignore]
     #[test]
     fn integration_test_part2() {
         {
