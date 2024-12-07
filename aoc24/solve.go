@@ -22,6 +22,8 @@ func Solve(day int, input io.Reader) (Result, error) {
 		return Day03(input)
 	case 4:
 		return Day04(input)
+	case 5:
+		return Day05(input)
 	}
 	return Result{}, fmt.Errorf("no solvers found for day %d", day)
 }
